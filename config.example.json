@@ -1,0 +1,19 @@
+{
+  "apps": [
+    {
+      "serverURL": "http://localhost:1337/",
+      "appId": "myAppId",
+      "masterKey": "myMasterKey",
+      "appName": "App",
+      "iconName": "",
+      "primaryBackgroundColor": "",
+      "secondaryBackgroundColor": ""
+    }
+  ],
+  "iconsFolder": "icons",
+	"dbUri": "mongodb://localhost:27017/dev",
+	"cloud": "./dist/cloud/main.js",
+	"fileKey": "optionalFileKey",
+	"masterKeyIps": ["127.0.0.1"],
+  "redisUrl": "redis://localhost:6379"
+}

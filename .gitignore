@@ -1,1 +1,9 @@
 node_modules
+config.json
+.env
+firebaseAccountKey.json
+.DS_Store
+logs/parse-server*
+tests/*.js
+tests/*.d.ts
+dist

@@ -13,8 +13,8 @@ KOYU is cloud messaging platform. You can develop a chat, forum, comment system,
 
 ### Authentication
 
-- [ ] Sign up
-- [ ] Sign in
+- [x] Sign up
+- [x] Sign in
 - [ ] Sign out
 
 ### User
@@ -25,11 +25,11 @@ KOYU is cloud messaging platform. You can develop a chat, forum, comment system,
 
 ### Project
 
-- [ ] Create project
+- [x] Create project
 - [ ] Get projects
-- [ ] Get project
+- [x] Get project
 - [ ] Update project
-- [ ] Delete project
+- [x] Delete project
 
 ### Category
 

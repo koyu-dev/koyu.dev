@@ -31,7 +31,7 @@
     "dotenv": "^16.4.5",
     "express-form-data": "^2.0.23",
     "npm": "^10.7.0",
-    "parse-server": "^2.2.13",
+    "parse-server": ">=7.0.0",
     "parse-server-firebase-auth-adapter": "^0.0.3"
   }
 }

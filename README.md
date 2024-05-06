@@ -40,14 +40,6 @@ KOYU is cloud messaging platform. You can develop a chat, forum, comment system,
 - [ ] Update channel
 - [ ] Delete channel
 
-### Thread
-
-- [ ] Create thread
-- [ ] Get threads
-- [ ] Get thread
-- [ ] Update thread
-- [ ] Delete thread
-
 ### Message
 
 - [ ] Create message

@@ -89,6 +89,47 @@ KOYU is cloud messaging platform. You can develop a chat, forum, comment system,
 └── tmp               # Temporary files for Express
 ```
 
+## Requirements
+
+- Node.js v20
+- MongoDB or PostgreSQL
+- Redis
+
+## Development
+
+### Install
+
+```bash
+$ npm install
+```
+
+### Update config
+
+```bash
+$ cp .env.example .env
+$ cp config.example.json config.json
+```
+
+### Start mongo & redis
+
+```bash
+sh start.sh
+```
+
+### Watch typescript
+
+```bash
+$ npm run watch
+```
+
+### Start server
+
+```bash
+$ npm start
+```
+
+You can access to the server at `http://localhost:1337`.
+
 ## License
 
 MIT

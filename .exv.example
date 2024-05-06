@@ -1,0 +1,6 @@
+NODE_ENV=development
+FIREBASE_SERVICE_ACCOUNT_KEY=
+FIREBASE_DATABASE_URL=
+PORT=1337
+MONGODB_CONFIG=/opt/homebrew/etc/mongod.conf
+REDIS_CONFIG=/opt/homebrew/etc/redis.conf

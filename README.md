@@ -32,13 +32,13 @@ KOYU is cloud messaging platform. You can develop a chat, forum, comment system,
 - [ ] Update project
 - [x] Delete project
 
-### Category
+### Channel
 
-- [ ] Create category
-- [ ] Get categories
-- [ ] Get category
-- [ ] Update category
-- [ ] Delete category
+- [ ] Create channel
+- [ ] Get channels
+- [ ] Get channel
+- [ ] Update channel
+- [ ] Delete channel
 
 ### Thread
 

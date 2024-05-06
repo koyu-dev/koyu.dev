@@ -9,6 +9,11 @@ import formData from 'express-form-data';
 import path from 'path';
 import FSFilesAdapter from '@parse/fs-files-adapter';
 
+import projectRouter from './projects/routes';
+import fileRouter from './files/routes';
+import channelRouter from './channels/routes';
+import messageRouter from './messages/routes';
+
 const uploadDir = `${path.dirname(__dirname)}/tmp`;
 
 const app = express();
@@ -17,34 +22,10 @@ app.use(formData.parse({
 	uploadDir, autoClean: true
 }));
 
-import { Request, Response, NextFunction } from 'express';
-import { ParsedQs } from 'qs';
-
-interface RequestFile extends Request<{}, any, any, ParsedQs, Record<string, any>> {
-	files: {
-		[key: string]: uploadFileParams;
-	}
-}
-
-interface FileData {
-	base64: string;
-	fileData: {
-		metadata: any;
-		tags: any;
-	};
-	_ContentType: string;
-	_ApplicationId: string;
-	_JavaScriptKey: string;
-	_ClientVersion: string;
-	_InstallationId: string;
-	_SessionToken: string;
-}
-
 import config from '../config.json';
-import { createProject, createProjectParams, deleteProject, getProject, uploadFileParams } from './project';
 
 const filesAdapter = new FSFilesAdapter({
-  encryptionKey: config.fileKey,
+  // encryptionKey: config.fileKey,
 });
 
 const params: any = {
@@ -85,8 +66,6 @@ const server = new ParseServer(params);
 
 const dashboard = new ParseDashboard(config);
 
-// Parse.initialize(config.apps[0].appId, config.jsKey, config.apps[0].masterKey);
-
 (async () => {
 	await server.start();
 	app.use(express.json())
@@ -106,55 +85,11 @@ const dashboard = new ParseDashboard(config);
 		next();
 	});
 
-	// Create project
-	app.post('/projects', async (req, res) => {
-		try {
-			const { files } = (req as unknown as RequestFile);
-			const image = files.image;
-			const sessionToken = req.headers['x-parse-session-token'] as string;
-			const name = req.body.name;
-			const params: createProjectParams = { name, image };
-			const project = await createProject(sessionToken, params);
-			res.send(project.toParams());
-		} catch (error) {
-			res.status(400).send({ error: error.message });
-		}
-	});
-
-	// Delete project
-	app.delete('/projects/:projectId', async (req, res, next) => {
-		try {
-			const sessionToken = req.headers['x-parse-session-token'] as string;
-			await deleteProject(sessionToken, req.params.projectId);
-			res.send({});
-		} catch (error) {
-			res.status(400).send({ error: error.message });
-		}
-	});
-
-	app.get('/projects/:projectId', async (req, res, next) => {
-		try {
-			const sessionToken = req.headers['x-parse-session-token'] as string;
-			const project = await getProject(sessionToken, req.params.projectId);
-			res.send(project.toParams());
-		} catch (error) {
-			res.status(400).send({ error: error.message });
-		}
-	});
+	app.use('/projects', projectRouter);
+	app.use('/projects/:projectId/channels', channelRouter);
+	app.use('/projects/:projectId/channels/:channelId/messages', messageRouter);
+	app.use('/files', fileRouter);
 	
-	app.get('/files/:fileId', async (req, res, next) => {
-		const { fileId } = req.params;
-		try {
-			const file = await filesAdapter.getFileData(fileId) as Buffer;
-			const json = JSON.parse(file.toString()) as FileData;
-			const buffer = Buffer.from(json.base64, 'base64');
-			res.set('Content-Type', json._ContentType);
-			res.send(buffer);
-		} catch (error) {
-			res.status(404).send({error: `File is not found.`});
-		}
-	});
-
 	app.use('/', server.app);
 	const httpServer = http.createServer(app);
   httpServer.listen(process.env.PORT, function () {

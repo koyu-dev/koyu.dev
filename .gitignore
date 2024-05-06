@@ -7,3 +7,4 @@ logs/parse-server*
 tests/*.js
 tests/*.d.ts
 dist
+files/*.*

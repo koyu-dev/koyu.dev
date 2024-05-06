@@ -3,7 +3,7 @@ import Parse from "parse/node";
 export const generateAcl = (name: string, user: Parse.User): Parse.ACL => {
 	// Set acl
 	const acl = new Parse.ACL();
-	acl.setPublicReadAccess(false);
+	acl.setPublicReadAccess(true);
 	acl.setPublicWriteAccess(false);
 	acl.setRoleReadAccess('admin', true);
 	acl.setRoleWriteAccess('admin', true);

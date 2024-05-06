@@ -1,7 +1,8 @@
 import Parse, { User } from "parse/node";
-import { generateAcl } from "./acl";
-import config from "../config.json";
+import { generateAcl } from "../acl";
+import config from "../../config.json";
 import fs from "fs";
+import { getProjectsQuery } from "./routes";
 
 Parse.initialize(config.apps[0].appId, config.jsKey, config.apps[0].masterKey);
 Parse.serverURL = config.apps[0].serverURL;
@@ -58,6 +59,12 @@ export interface createProjectParams {
 	image?: uploadFileParams;
 }
 
+export interface updateProjectParams {
+	name: string;
+	image?: uploadFileParams;
+	projectId: string;
+}
+
 export interface uploadFileParams {
 	fieldName: string;
 	originalFilename: string;
@@ -73,20 +80,21 @@ export interface uploadFileParams {
 
 export const createProject = async (sessionToken: string, params: createProjectParams): Promise<Project> => {
 	Parse.User.enableUnsafeCurrentUser();
-	if (!sessionToken === undefined || sessionToken.trim() === '') {
+	if (!sessionToken || sessionToken.trim() === '') {
 		throw new Error('Invalid session token');
 	}
 	await Parse.User.become(sessionToken);
 	const user = Parse.User.current() as User;
 	const { name, image } = params;
 	const query = new Parse.Query('Project');
-	query.equalTo('name', name.toLocaleLowerCase());
+	query.equalTo('slug', name.toLocaleLowerCase());
 	const res = await query.first({ useMasterKey: true });
 	if (res) {
 		throw new Error('Project already exists');
 	}
 	const project = new (Parse.Object.extend('Project')) as Project;
-	project.set('name', name.toLocaleLowerCase());
+	project.set('name', name);
+	project.set('slug', name.toLocaleLowerCase());
 	project.set('owner', user);
 	if (image) {
 		const data = fs.readFileSync(image.path);
@@ -108,27 +116,66 @@ export const createProject = async (sessionToken: string, params: createProjectP
 	return project;
 };
 
-export const createProjectParams = {
-	requireUser: true,
-	fields: {
-		name: {
-			type: String,
-			required: true,
-			options: (name: string) => name.match(/^[a-z0-9_]{3,20}$/),
-			error: 'Invalid project name format [a-z0-9_]{3,20}',
-		}
-	}
-};
-
-export const getProject = async (sessionToken: string, name: string): Promise<Project> => {
-	if (!sessionToken === undefined || sessionToken.trim() === '') {
+export const updateProject = async (sessionToken: string, params: updateProjectParams): Promise<Project> => {
+	if (!sessionToken || sessionToken.trim() === '') {
 		throw new Error('Invalid session token');
 	}
+	const { name, image, projectId } = params;
 	const query = new Parse.Query('Project');
-	// Find if the project already exists by domain
-	query.equalTo('name', name.toLocaleLowerCase());
+	query.equalTo('slug', projectId.toLocaleLowerCase());
 	query.include('owner');
-	const project = await query.first({sessionToken}) as Project;
+	const project = await query.first({ sessionToken }) as Project;
+	if (!project) {
+		throw new Error('Project is not found.');
+	}
+	project.set('name', name);
+	project.set('slug', name.toLocaleLowerCase());
+	if (image) {
+		// Delete old icon
+		const icon = project.get('icon') as Parse.File;
+		if (icon) {
+			await icon.destroy();
+		}
+		const data = fs.readFileSync(image.path);
+		const file = new Parse.File(image.name, Array.from(new Uint8Array(data.buffer)), image.type);
+		project.set('icon', file);
+	}
+	await project.save(null, {sessionToken});
+	return project;
+};
+
+export const findProjects = async (sessionToken: string, params: getProjectsQuery, publicProject: boolean = true): Promise<Project[]> => {
+	const query = new Parse.Query('Project');
+	query.include('owner');
+	const orders = (params.order || 'createdAt').split(',');
+	const limit = parseInt(params.limit || '10');
+	const page = parseInt(params.page || '1');
+	query.limit(limit);
+	query.skip((page - 1) * limit);
+	orders.forEach(order => {
+		if (order.startsWith('-')) {
+			query.addDescending(order.slice(1));
+		} else {
+			query.addAscending(order);
+		}
+	});
+	if (!publicProject && (!sessionToken || sessionToken.trim() === '')) {
+		throw new Error('Invalid session token');
+	}
+	const options = publicProject ? { useMasterKey: true } : { sessionToken };
+	const projects = await query.find(options) as Project[];
+	return projects;
+};
+
+export const getProject = async (sessionToken: string, name: string, publicProject: boolean = true): Promise<Project> => {
+	const query = new Parse.Query('Project');
+	query.equalTo('slug', name.toLocaleLowerCase());
+	query.include('owner');
+	if (!publicProject && (!sessionToken || sessionToken.trim() === '')) {
+		throw new Error('Invalid session token');
+	}
+	const options = publicProject ? { useMasterKey: true } : { sessionToken };
+	const project = await query.first(options) as Project;
 	if (!project) {
 		throw new Error('Project is not found.');
 	}
@@ -136,7 +183,7 @@ export const getProject = async (sessionToken: string, name: string): Promise<Pr
 };
 
 export const deleteProject = async (sessionToken: string, name: string): Promise<void> => {
-	const project = await getProject(sessionToken, name);
+	const project = await getProject(sessionToken, name, false);
 	try {
 		const icon = project.get('icon') as Parse.File;
 		await project.destroy({sessionToken});

@@ -1,6 +1,7 @@
 import Parse, { User } from "parse/node";
 import { generateAcl } from "./acl";
 import config from "../config.json";
+import fs from "fs";
 
 Parse.initialize(config.apps[0].appId, config.jsKey, config.apps[0].masterKey);
 Parse.serverURL = config.apps[0].serverURL;
@@ -16,6 +17,34 @@ export class Project extends Parse.Object {
 			if (['ACL', 'objectId'].includes(key)) {
 				continue;
 			}
+			if (key === 'owner') {
+				const owner = this.get(key) as Parse.User;
+				const p: {[key: string]: any} = {};
+				for (const key in owner.toJSON()) {
+					if (['ACL', 'objectId', '__type', 'className', 'sessionToken'].includes(key)) {
+						continue;
+					}
+					p[key] = owner.get(key);
+				}
+				params[key] = p;
+				continue;
+			}
+			if (key === 'icon') {
+				const file = this.get(key) as Parse.File;
+				const p: {[key: string]: any} = {};
+				const fileJson = file.toJSON();
+				for (const key in fileJson) {
+					if (['__type'].includes(key)) {
+						continue;
+					}
+					p[key] = fileJson[key];
+					if (key === 'url') {
+						p.url = fileJson[key].replace(`${config.apps[0].appId}/`, '');
+					}
+				}
+				params[key] = p;
+				continue;
+			}
 			params[key] = this.get(key);
 		}
 		return params;
@@ -24,15 +53,34 @@ export class Project extends Parse.Object {
 
 Parse.Object.registerSubclass('Project', Project);
 
-export const createProject = async (sessionToken: string, name: string): Promise<Project> => {
+export interface createProjectParams {
+	name: string;
+	image?: uploadFileParams;
+}
+
+export interface uploadFileParams {
+	fieldName: string;
+	originalFilename: string;
+	path: string;
+	headers: {
+		'content-disposition': string;
+		'content-type': string;
+	};
+	size: number;
+	name: string;
+	type: string;
+}
+
+export const createProject = async (sessionToken: string, params: createProjectParams): Promise<Project> => {
 	Parse.User.enableUnsafeCurrentUser();
 	if (!sessionToken === undefined || sessionToken.trim() === '') {
 		throw new Error('Invalid session token');
 	}
 	await Parse.User.become(sessionToken);
 	const user = Parse.User.current() as User;
+	const { name, image } = params;
 	const query = new Parse.Query('Project');
-	query.equalTo('name', name);
+	query.equalTo('name', name.toLocaleLowerCase());
 	const res = await query.first({ useMasterKey: true });
 	if (res) {
 		throw new Error('Project already exists');
@@ -40,6 +88,11 @@ export const createProject = async (sessionToken: string, name: string): Promise
 	const project = new (Parse.Object.extend('Project')) as Project;
 	project.set('name', name.toLocaleLowerCase());
 	project.set('owner', user);
+	if (image) {
+		const data = fs.readFileSync(image.path);
+		const file = new Parse.File(image.name, Array.from(new Uint8Array(data.buffer)), image.type);
+		project.set('icon', file);
+	}
 	// Set acl
 	const acl = generateAcl(name, user);
 	project.setACL(acl);
@@ -85,7 +138,11 @@ export const getProject = async (sessionToken: string, name: string): Promise<Pr
 export const deleteProject = async (sessionToken: string, name: string): Promise<void> => {
 	const project = await getProject(sessionToken, name);
 	try {
+		const icon = project.get('icon') as Parse.File;
 		await project.destroy({sessionToken});
+		if (icon) {
+			await icon.destroy();
+		}
 	} catch (error) {
 		throw new Error('Error deleting project. Please check your permissions.');
 	}

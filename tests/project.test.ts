@@ -1,6 +1,7 @@
 import axios, { Axios, AxiosError } from 'axios';
 import config from '../config.json';
-import e from 'cors';
+import fs from 'fs';
+import FormData from 'form-data';
 const baseUrl = config.apps[0].serverURL;
 
 export interface ProjectJson {
@@ -10,6 +11,11 @@ export interface ProjectJson {
   createdAt: string
   updatedAt: string
   objectId: string
+	icon?: {
+		__type: string
+		name: string
+		url: string
+	}
 }
 
 export interface User {
@@ -141,6 +147,40 @@ describe("Project", () => {
 			expect(true).toBe(true);
 		} catch (error) {
 			console.log(error);
+		}
+	});
+
+	test('Successful create project w/ image', async () => {
+		try {
+			const name = 'test';
+			const form = new FormData();
+			const fileName = 'test.png';
+			const file = fs.readFileSync(`./tests/${fileName}`);
+			form.append('name', name);
+			form.append('image', Buffer.from(file.buffer), fileName);
+			const res = await axios.post(`${baseUrl}projects`, form, {
+				headers: {
+					'X-Session-Token': sessionToken,
+				},
+			});
+			const projectJson = res.data as ProjectJson;
+			expect(projectJson.name).toBe('test');
+			expect(projectJson.owner.username).toBe(username);
+			expect(projectJson.createdAt).toBeDefined();
+			expect(projectJson.updatedAt).toBeDefined();
+			expect(projectJson.icon).toBeDefined();
+			expect(projectJson.icon!.name).toBeDefined();
+			expect(projectJson.icon!.url).toBeDefined();
+			const deleteUrl = `${baseUrl}projects/${name}`;
+			await axios.delete(deleteUrl, {
+				headers: {
+					'X-Session-Token': sessionToken,
+				},
+			});
+			expect(true).toBe(true);
+		} catch (error) {
+			console.log(error);
+			expect(true).toBe(false);
 		}
 	});
 });

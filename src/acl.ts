@@ -1,3 +1,4 @@
+import Parse from "parse/node";
 
 export const generateAcl = (name: string, user: Parse.User): Parse.ACL => {
 	// Set acl

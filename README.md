@@ -26,6 +26,7 @@ KOYU is cloud messaging platform. You can develop a chat, forum, comment system,
 ### Project
 
 - [x] Create project
+	- [x] with Icon image
 - [ ] Get projects
 - [x] Get project
 - [ ] Update project

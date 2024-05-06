@@ -72,6 +72,23 @@ KOYU is cloud messaging platform. You can develop a chat, forum, comment system,
 - [ ] Update member
 - [ ] Delete member
 
+## Direcotry
+
+```
+├── dist              # Compiled files
+├── files             # Uploaded files for KOYU
+├── logs              # Log files
+├── src               # Source files
+│   ├── channels     # API /projects/:projectId/channels
+│   ├── cloud        # Cloud functions
+│   ├── files        # API /files
+│   ├── messages     # API /projects/:projectId/channels/:channelId/messages
+│   ├── projects     # API /projects
+│   └── types        # TypeScript types
+├── tests             # Test files
+└── tmp               # Temporary files for Express
+```
+
 ## License
 
 MIT
